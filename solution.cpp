@@ -54,6 +54,7 @@ int main() {
     for (int i = 0; i < m; i++) {
         int x, y;
         cin >> x >> y;
+        if (x == y) continue; // Skip self-loops
         adj[x].push_back(y);
         adj[y].push_back(x);
         degree[x]++;
