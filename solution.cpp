@@ -1,43 +1,40 @@
 #include <iostream>
 #include <vector>
 #include <queue>
-#include <cstring>
 using namespace std;
 
 const int MAXN = 100005;
 vector<int> adj[MAXN];
 int color[MAXN];
-bool removed[MAXN];
-bool visited[MAXN];
+bool inCycle[MAXN];
 int degree[MAXN];
 int n, m;
 
-pair<bool, int> checkComponent(int start) {
+bool checkBipartite(int start, vector<int>& component) {
     queue<int> q;
     q.push(start);
     color[start] = 0;
-    visited[start] = true;
-    bool isBipartite = true;
-    int count = 1;
+    component.push_back(start);
+    bool bipartite = true;
     
     while (!q.empty()) {
         int u = q.front();
         q.pop();
         
         for (int v : adj[u]) {
-            if (removed[v]) continue;
+            if (!inCycle[v]) continue;
             
             if (color[v] == -1) {
                 color[v] = 1 - color[u];
-                visited[v] = true;
-                count++;
+                component.push_back(v);
                 q.push(v);
             } else if (color[v] == color[u]) {
-                isBipartite = false;
+                bipartite = false;
             }
         }
     }
-    return {isBipartite, count};
+    
+    return bipartite;
 }
 
 int main() {
@@ -46,67 +43,73 @@ int main() {
     
     cin >> n >> m;
     
-    memset(color, -1, sizeof(color));
-    memset(removed, false, sizeof(removed));
-    memset(visited, false, sizeof(visited));
-    memset(degree, 0, sizeof(degree));
+    for (int i = 1; i <= n; i++) {
+        color[i] = -1;
+        inCycle[i] = false;
+        degree[i] = 0;
+    }
     
     for (int i = 0; i < m; i++) {
         int x, y;
         cin >> x >> y;
-        if (x == y) continue; // Skip self-loops
+        if (x == y) continue;
         adj[x].push_back(y);
         adj[y].push_back(x);
         degree[x]++;
         degree[y]++;
     }
     
-    // Iteratively remove nodes with degree <= 1
-    queue<int> toRemove;
+    // Mark all nodes as potentially in cycles
+    for (int i = 1; i <= n; i++) {
+        inCycle[i] = true;
+    }
+    
+    // Remove nodes with degree <= 1 iteratively
+    queue<int> q;
     for (int i = 1; i <= n; i++) {
         if (degree[i] <= 1) {
-            toRemove.push(i);
-            removed[i] = true;
+            q.push(i);
+            inCycle[i] = false;
         }
     }
     
-    while (!toRemove.empty()) {
-        int u = toRemove.front();
-        toRemove.pop();
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
         
         for (int v : adj[u]) {
-            if (!removed[v]) {
+            if (inCycle[v]) {
                 degree[v]--;
                 if (degree[v] <= 1) {
-                    toRemove.push(v);
-                    removed[v] = true;
+                    q.push(v);
+                    inCycle[v] = false;
                 }
             }
         }
     }
     
-    // Count nodes that are removed or in bipartite components
-    int cannotInvite = 0;
-    
-    // Count removed nodes
+    // Count nodes not in cycles
+    int answer = 0;
     for (int i = 1; i <= n; i++) {
-        if (removed[i]) {
-            cannotInvite++;
+        if (!inCycle[i]) {
+            answer++;
         }
     }
     
-    // Check remaining nodes for bipartite components
+    // Check remaining nodes (in cycles) for bipartiteness
     for (int i = 1; i <= n; i++) {
-        if (!removed[i] && !visited[i]) {
-            auto [isBipartite, count] = checkComponent(i);
+        if (inCycle[i] && color[i] == -1) {
+            vector<int> component;
+            bool bipartite = checkBipartite(i, component);
             
-            if (isBipartite) {
-                cannotInvite += count;
+            if (bipartite) {
+                // This component only has even cycles
+                answer += component.size();
             }
         }
     }
     
-    cout << cannotInvite << endl;
+    cout << answer << endl;
     
     return 0;
 }
