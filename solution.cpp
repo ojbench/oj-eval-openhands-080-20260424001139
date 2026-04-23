@@ -65,6 +65,7 @@ int main() {
     for (int i = 1; i <= n; i++) {
         if (degree[i] <= 1) {
             toRemove.push(i);
+            removed[i] = true;
         }
     }
     
@@ -72,14 +73,12 @@ int main() {
         int u = toRemove.front();
         toRemove.pop();
         
-        if (removed[u]) continue;
-        removed[u] = true;
-        
         for (int v : adj[u]) {
             if (!removed[v]) {
                 degree[v]--;
                 if (degree[v] <= 1) {
                     toRemove.push(v);
+                    removed[v] = true;
                 }
             }
         }
